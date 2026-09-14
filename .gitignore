@@ -1,4 +1,2 @@
-
-# backend env
-Carbon-backend/.env
+.env
 node_modules/
