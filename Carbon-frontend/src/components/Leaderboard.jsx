@@ -350,7 +350,13 @@ function Leaderboard() {
                       User
                     </th>
                     <th className="py-4 px-6 text-right font-semibold uppercase tracking-wider text-xs text-white/90">
-                      Total CO₂ Saved
+                      Total CO₂
+                    </th>
+                    <th className="py-4 px-6 text-right font-semibold uppercase tracking-wider text-xs text-white/90">
+                      Improvement
+                    </th>
+                    <th className="py-4 px-6 text-right font-semibold uppercase tracking-wider text-xs text-white/90">
+                      Eco Pts
                     </th>
                   </tr>
                 </thead>
@@ -433,6 +439,24 @@ function Leaderboard() {
                         >
                           <FaLeaf className="text-xs opacity-70" />
                           {user.totalCO2?.toFixed(2) || "0.00"} kg
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        {user.improvement === null ? (
+                          <span className="text-xs text-slate-400">—</span>
+                        ) : user.improvement >= 0 ? (
+                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                            ▼ {user.improvement}%
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-red-500">
+                            ▲ {Math.abs(user.improvement)}%
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
+                          🌟 {user.ecoPoints || 0}
                         </span>
                       </td>
                     </motion.tr>

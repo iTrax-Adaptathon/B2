@@ -1,4 +1,6 @@
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 
 const sendEmail = async (to, subject, text) => {
   try {
@@ -16,6 +18,18 @@ const sendEmail = async (to, subject, text) => {
       subject: subject,
       text: text,
     };
+
+    if (!process.env.EMAIL_USER || process.env.EMAIL_USER.includes("demo")) {
+      console.log("DEV OTP ->", to, ":", subject);
+      console.log(text);
+      try {
+        const logPath = path.join(__dirname, "..", "dev-otp.log");
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${to} -> ${subject}\n${text}\n\n`);
+      } catch (e) {
+        console.error("Could not write dev-otp.log:", e.message);
+      }
+      return { response: "dev mode, OTP logged to console" };
+    }
 
     const info = await transporter.sendMail(mailOptions);
 

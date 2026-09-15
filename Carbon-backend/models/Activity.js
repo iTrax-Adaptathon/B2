@@ -8,7 +8,7 @@ const activitySchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["transport", "electricity", "diet"],
+    enum: ["transport", "electricity", "diet", "waste"],
     required: true,
   },
   data: {

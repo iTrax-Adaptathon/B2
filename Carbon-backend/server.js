@@ -13,6 +13,10 @@ const activityRoutes = require("./routes/activity.routes");
 const achievementRoutes = require("./routes/achievement.routes");
 const userRoutes = require("./routes/user.routes");
 const offsetRoutes = require("./routes/offset.routes");
+const insightsRoutes = require("./routes/insights.routes");
+const challengeRoutes = require("./routes/challenge.routes");
+const weeklySummaryRoutes = require("./routes/weeklySummary.routes");
+const chatRoutes = require("./routes/chat.routes");
 
 // Email utility import
 const sendEmail = require("./utils/sendEmail");
@@ -39,6 +43,10 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/offset", offsetRoutes);
+app.use("/api/insights", insightsRoutes);
+app.use("/api/challenges", challengeRoutes);
+app.use("/api/weekly-summary", weeklySummaryRoutes);
+app.use("/api/chat", chatRoutes);
 
 
 

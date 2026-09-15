@@ -54,6 +54,7 @@ function Navbar({ user, setUser }) {
   const links = [
     { to: "/", label: "Home" },
     { to: "/dashboard", label: "Dashboard" },
+    { to: "/carbon-insights", label: "Insights" },
     { to: "/goals", label: "Goals" },
     { to: "/achievements", label: "Achievements" },
     { to: "/leaderboard", label: "Leaderboard" },

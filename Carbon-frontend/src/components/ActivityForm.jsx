@@ -8,6 +8,7 @@ import {
   FaCar,
   FaBolt,
   FaUtensils,
+  FaTrashAlt,
   FaTwitter,
   FaLinkedin,
   FaInstagram,
@@ -59,6 +60,7 @@ const ActivityForm = () => {
     { value: "transport", label: "Transport", icon: <FaCar />, color: "text-blue-600", bg: "bg-blue-100" },
     { value: "electricity", label: "Electricity", icon: <FaBolt />, color: "text-amber-600", bg: "bg-amber-100" },
     { value: "diet", label: "Diet", icon: <FaUtensils />, color: "text-green-600", bg: "bg-green-100" },
+    { value: "waste", label: "Waste", icon: <FaTrashAlt />, color: "text-purple-600", bg: "bg-purple-100" },
   ];
 
   const renderInputs = () => {
@@ -155,6 +157,51 @@ const ActivityForm = () => {
           </motion.div>
         );
 
+      case "waste":
+        return (
+          <>
+            <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible">
+              <label className="block text-base font-semibold text-slate-700 mb-3">
+                Disposal Method
+              </label>
+              <select
+                className="w-full border border-slate-300 rounded-xl py-3 px-4 text-slate-800 bg-white cursor-pointer focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-base"
+                value={data.disposal || ""}
+                onChange={(e) => setData({ ...data, disposal: e.target.value })}
+              >
+                <option value="">Select disposal method</option>
+                <option value="landfilled">🗑️ Landfilled / thrown away</option>
+                <option value="recycled">♻️ Recycled / composted</option>
+              </select>
+              <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                Landfilled waste emits far more CO₂ than recycled waste
+              </p>
+            </motion.div>
+
+            <motion.div custom={1} variants={fieldVariants} initial="hidden" animate="visible">
+              <label className="block text-base font-semibold text-slate-700 mb-3">
+                Amount of Waste
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.5"
+                  placeholder="e.g., 2"
+                  className="w-full border border-slate-300 rounded-xl py-3 px-4 pr-14 text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-base"
+                  value={data.weight || ""}
+                  onChange={(e) => setData({ ...data, weight: e.target.value })}
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-base font-medium">
+                  kg
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                Example: A household produces ~1-3 kg of waste per day
+              </p>
+            </motion.div>
+          </>
+        );
+
       default:
         return null;
     }
@@ -243,7 +290,7 @@ const ActivityForm = () => {
               </label>
 
               {/* Activity Type Cards */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 {activityTypes.map((activity) => (
                   <motion.button
                     key={activity.value}
@@ -310,6 +357,7 @@ const ActivityForm = () => {
                 <option value="transport">Transport</option>
                 <option value="electricity">Electricity</option>
                 <option value="diet">Diet</option>
+                <option value="waste">Waste</option>
               </select>
             </div>
 

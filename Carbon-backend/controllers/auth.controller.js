@@ -137,23 +137,16 @@ exports.register = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
-
-    if (!user) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please verify your email first"
+        message: "Name, email and password are required"
       });
     }
 
-    if (!user.isVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Please verify OTP first"
-      });
-    }
+    const existingUser = await User.findOne({ email });
 
-    if (user.password) {
+    if (existingUser && existingUser.password) {
       return res.status(400).json({
         success: false,
         message: "User already registered"
@@ -169,9 +162,20 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    user.name = name;
-    user.password = hashedPassword;
-    await user.save();
+
+    if (existingUser) {
+      existingUser.name = name;
+      existingUser.password = hashedPassword;
+      existingUser.isVerified = true;
+      await existingUser.save();
+    } else {
+      await new User({
+        name,
+        email,
+        password: hashedPassword,
+        isVerified: true
+      }).save();
+    }
 
     return res.status(201).json({
       success: true,
@@ -200,13 +204,6 @@ exports.login = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User not found"
-      });
-    }
-
-    if (!user.isVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Please verify OTP first"
       });
     }
 

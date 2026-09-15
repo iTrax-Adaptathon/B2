@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/authMiddleware");
+const bcrypt = require("bcryptjs");
 const upload = require("../middleware/upload");
 const User = require("../models/User");
 const Activity = require("../models/Activity"); // Required for achievements
@@ -15,16 +16,33 @@ router.get("/me", verifyToken, async (req, res) => {
   }
 });
 
-// PUT /api/users/me - Update name/email/password
+// PUT /api/users/me - Update profile (whitelisted fields only)
 router.put("/me", verifyToken, async (req, res) => {
   try {
+    const { name, email, password } = req.body || {};
+
+    const updates = {};
+    if (typeof name === "string" && name.trim()) updates.name = name.trim();
+    if (typeof email === "string" && email.trim()) updates.email = email.trim().toLowerCase();
+    if (typeof password === "string" && password.trim()) {
+      updates.password = await bcrypt.hash(password, 10);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
     const updated = await User.findByIdAndUpdate(
       req.user.id,
-      { $set: req.body },
-      { new: true }
-    ).select("-password");
-    res.json(updated);
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select("-password -otp -otpExpiry");
+    if (!updated) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(updated);
   } catch (err) {
+    console.error("UPDATE PROFILE ERROR:", err);
     res.status(500).json({ message: "Failed to update profile" });
   }
 });

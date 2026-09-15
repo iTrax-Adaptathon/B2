@@ -23,6 +23,7 @@ import {
   FaCar,
   FaSolarPanel,
   FaGlobeAmericas,
+  FaBrain,
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -36,6 +37,12 @@ function Home() {
       icon: <FaChartLine className="text-emerald-700 text-2xl" />,
       color: "bg-emerald-50",
       path: "/dashboard",
+    },
+    {
+      label: "Insights",
+      icon: <FaBrain className="text-teal-600 text-2xl" />,
+      color: "bg-teal-50",
+      path: "/carbon-insights",
     },
     {
       label: "Log Activity",

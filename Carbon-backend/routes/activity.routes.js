@@ -5,6 +5,9 @@ const verifyToken = require("../middleware/authMiddleware");
 
 const Activity = require("../models/Activity");
 const Achievement = require("../models/Achievement");
+const User = require("../models/User");
+const { calculateActivityCarbon } = require("../services/carbon.service");
+const { createAchievement } = require("../controllers/achievement.controller");
 
 // Controllers
 const {
@@ -18,21 +21,6 @@ router.get("/leaderboard", verifyToken, getLeaderboard);
 
 router.get("/weekly-summary", verifyToken, getWeeklySummary);
 
-
-const emissionFactors = {
-  transport: {
-    car: 0.21,
-    bus: 0.1,
-    bike: 0.02,
-    train: 0.05
-  },
-  electricity: 0.7,
-  diet: {
-    vegetarian: 2.0,
-    nonVegetarian: 4.5,
-    vegan: 1.5
-  }
-};
 
 /* ============================
    GET LOGGED-IN USER ACTIVITIES
@@ -77,29 +65,47 @@ const checkAndAwardAchievements = async (userId) => {
   }
 };
 
+// Award category-specific eco badges (awarded once)
+const awardCategoryBadges = async (userId, type, data) => {
+  try {
+    if (type === "transport") {
+      if (data.mode === "bike") await createAchievement(userId, "Cycling Hero", "Logged a cycling activity. Zero-emission commute!");
+      if (data.mode === "bus" || data.mode === "train") await createAchievement(userId, "Public Transport Pro", "Chose shared or low-footprint transport.");
+    } else if (type === "electricity") {
+      if (Number(data.usage) <= 5) await createAchievement(userId, "Energy Saver", "Logged a low-power electricity activity.");
+    } else if (type === "diet") {
+      if (data.dietType === "vegan") await createAchievement(userId, "Green Plate", "Chose a fully plant-based meal.");
+      if (data.dietType === "vegetarian") await createAchievement(userId, "Eco Eater", "Chose a vegetarian meal.");
+    } else if (type === "waste") {
+      if (data.disposal === "recycled") await createAchievement(userId, "Waste Wizard", "Logged recycled or composted waste.");
+    }
+  } catch (err) {
+    console.error("BADGE AWARD ERROR:", err);
+  }
+};
+
 /* ============================
    POST ACTIVITY
 ============================ */
 router.post("/", verifyToken, async (req, res) => {
   const { type, data } = req.body;
-  let carbon = 0;
   let suggestion = "";
 
   try {
+    const { carbon, valid } = calculateActivityCarbon(type, data);
+
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid activity or missing fields." });
+    }
+
     if (type === "transport") {
-      carbon = parseFloat(data.distance) * emissionFactors.transport[data.mode];
       suggestion = "Try walking, cycling, or using public transport more often.";
-    } 
-    else if (type === "electricity") {
-      carbon = parseFloat(data.usage) * emissionFactors.electricity;
+    } else if (type === "electricity") {
       suggestion = "Reduce electricity usage and switch to renewable sources.";
-    } 
-    else if (type === "diet") {
-      carbon = emissionFactors.diet[data.dietType];
+    } else if (type === "diet") {
       suggestion = "Consider eating more plant-based meals.";
-    } 
-    else {
-      return res.status(400).json({ message: "Invalid activity type." });
+    } else if (type === "waste") {
+      suggestion = "Recycle and compost where possible — landfill waste emits far more CO₂.";
     }
 
     const activity = new Activity({
@@ -111,6 +117,8 @@ router.post("/", verifyToken, async (req, res) => {
 
     await activity.save();
     await checkAndAwardAchievements(req.user.id);
+    await awardCategoryBadges(req.user.id, type, data);
+    await User.updateOne({ _id: req.user.id }, { $inc: { ecoPoints: 5 } });
 
     res.json({
       carbonFootprint: carbon.toFixed(2),

@@ -2,76 +2,23 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FaEnvelope, FaLock, FaUser, FaKey } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaUser } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "", otp: "" });
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Only allow digits for OTP and limit to 6 characters
-    if (name === "otp" && (!/^\d*$/.test(value) || value.length > 6)) {
-      return;
-    }
     setForm({ ...form, [name]: value });
-  };
-
-  const handleSendOtp = async () => {
-    if (!form.email) {
-      toast.error("Please enter your email first", { autoClose: 3000 });
-      return;
-    }
-    try {
-      setSendingOtp(true);
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, {
-        email: form.email,
-      });
-      setOtpSent(true);
-      toast.success("OTP sent to your email!", { autoClose: 2000 });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send OTP", {
-        autoClose: 3000,
-      });
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (form.otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP", { autoClose: 3000 });
-      return;
-    }
-    try {
-      setVerifyingOtp(true);
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/verify-otp`, {
-        email: form.email,
-        otp: form.otp,
-      });
-      setOtpVerified(true);
-      toast.success("Email verified successfully!", { autoClose: 2000 });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "OTP verification failed", {
-        autoClose: 3000,
-      });
-    } finally {
-      setVerifyingOtp(false);
-    }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!otpVerified) {
-      toast.error("Please verify your email first", { autoClose: 3000 });
-      return;
-    }
     try {
+      setLoading(true);
       await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         name: form.name,
         email: form.email,
@@ -87,6 +34,8 @@ function Register() {
       toast.error(err.response?.data?.message || "Registration failed", {
         autoClose: 3000,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,69 +71,18 @@ function Register() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-white border rounded px-3 py-2 shadow-sm flex-1">
-              <FaEnvelope className="text-gray-400 mr-2" />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                className={`outline-none w-full ${otpSent ? "bg-gray-50 text-gray-500" : ""}`}
-                value={form.email}
-                onChange={handleChange}
-                readOnly={otpSent}
-                required
-              />
-            </div>
-            {!otpVerified && (
-              <button
-                type="button"
-                onClick={handleSendOtp}
-                disabled={sendingOtp || !form.email}
-                className="px-3 py-2 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {sendingOtp ? "Sending..." : otpSent ? "Resend" : "Send OTP"}
-              </button>
-            )}
-            {otpVerified && (
-              <span className="text-green-600 text-sm font-medium whitespace-nowrap">✓ Verified</span>
-            )}
+          <div className="flex items-center bg-white border rounded px-3 py-2 shadow-sm">
+            <FaEnvelope className="text-gray-400 mr-2" />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              className="outline-none w-full"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
           </div>
-
-          {otpSent && !otpVerified && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              transition={{ duration: 0.3 }}
-              className="space-y-2"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-white border rounded px-3 py-2 shadow-sm flex-1">
-                  <FaKey className="text-gray-400 mr-2" />
-                  <input
-                    type="text"
-                    name="otp"
-                    placeholder="Enter 6-digit OTP"
-                    className="outline-none w-full tracking-widest text-center font-mono"
-                    value={form.otp}
-                    onChange={handleChange}
-                    maxLength={6}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={verifyingOtp || form.otp.length !== 6}
-                  className="px-3 py-2 rounded bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  {verifyingOtp ? "Verifying..." : "Verify"}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 text-center">
-                Check your email for the verification code
-              </p>
-            </motion.div>
-          )}
 
           <div className="flex items-center bg-white border rounded px-3 py-2 shadow-sm">
             <FaLock className="text-gray-400 mr-2" />
@@ -192,20 +90,19 @@ function Register() {
               type="password"
               name="password"
               placeholder="Password"
-              className={`outline-none w-full ${!otpVerified ? "bg-gray-50 text-gray-400" : ""}`}
+              className="outline-none w-full"
               value={form.password}
               onChange={handleChange}
-              disabled={!otpVerified}
               required
             />
           </div>
 
           <button
             type="submit"
-            disabled={!otpVerified}
+            disabled={loading}
             className="w-full py-2 rounded bg-gradient-to-r from-black via-gray-800 to-black text-white font-semibold shadow-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Account
+            {loading ? "Creating..." : "Create Account"}
           </button>
 
           <p className="mt-6 text-center text-sm text-gray-600">

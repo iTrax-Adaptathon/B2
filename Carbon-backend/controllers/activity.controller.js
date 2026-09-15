@@ -1,22 +1,11 @@
 // controllers/activity.controller.js
 const Activity = require("../models/Activity");
 const User = require("../models/User");
+const Goal = require("../models/Goal");
+const { weekRange, resolveWeeklyGoal } = require("../services/carbon.service");
 
-// Helper: Get start of current week 
-const getStartOfWeek = () => {
-  const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-  return startOfWeek;
-};
-
-// Helper: Get end of current week
-const getEndOfWeek = () => {
-  const endOfWeek = new Date();
-  endOfWeek.setDate(endOfWeek.getDate() + (6 - endOfWeek.getDay()));
-  endOfWeek.setHours(23, 59, 59, 999);
-  return endOfWeek;
-};
+// NOTE: week boundaries now come from services/carbon.service.js (Monday-start week)
+// so dashboard/leaderboard/insights all agree on when a week starts.
 
 // Returns a title for leaderboard display (not stored in DB)
 const getEcoTitle = (rank, weeklyStatus, activityCount) => {
@@ -36,19 +25,20 @@ const getWeeklySummary = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    
-    const startOfWeek = getStartOfWeek();
+    const { start: startOfWeek } = weekRange(new Date());
 
-    const activities = await Activity.find({
-      user: userId,
-      createdAt: { $gte: startOfWeek },
-    });
+    const [activities, user, goalDoc] = await Promise.all([
+      Activity.find({
+        user: userId,
+        createdAt: { $gte: startOfWeek },
+      }),
+      User.findById(userId),
+      Goal.findOne({ user: userId }),
+    ]);
 
     const total = activities.reduce((sum, act) => sum + act.carbonFootprint, 0);
 
-    const user = await User.findById(userId); 
-
-    const goal = user.weeklyGoal || 100; 
+    const goal = resolveWeeklyGoal(user, goalDoc);
     const status = total <= goal ? "under" : "over";
 
     res.json({ total: total.toFixed(2), goal, status });
@@ -61,8 +51,10 @@ const getWeeklySummary = async (req, res) => {
 // Leaderboard with dynamic eco titles
 const getLeaderboard = async (req, res) => {
   try {
-    const startOfWeek = getStartOfWeek();
-    const endOfWeek = getEndOfWeek();
+    const { start: startOfWeek, end: endOfWeek } = weekRange(new Date());
+
+    const startOfPrevWeek = new Date(startOfWeek);
+    startOfPrevWeek.setDate(startOfPrevWeek.getDate() - 7);
 
     // Get all users with their weekly activities
     const leaderboardData = await Activity.aggregate([
@@ -90,32 +82,75 @@ const getLeaderboard = async (req, res) => {
         $unwind: "$userInfo"
       },
       {
+        $lookup: {
+          from: "goals",
+          localField: "_id",
+          foreignField: "user",
+          as: "goalInfo"
+        }
+      },
+      {
         $project: {
           _id: 1,
           name: "$userInfo.name",
           totalCO2: 1,
           activityCount: 1,
-          weeklyGoal: "$userInfo.weeklyGoal"
+          goalDocGoal: { $arrayElemAt: ["$goalInfo.weeklyGoal", 0] },
+          userWeeklyGoal: "$userInfo.weeklyGoal",
+          ecoPoints: "$userInfo.ecoPoints"
         }
       },
       {
-        $sort: { totalCO2: 1 } 
+        $sort: { totalCO2: 1 }
       }
     ]);
 
-    // Add rank and eco title to each user
+    // Previous week totals per user (for improvement metric)
+    const prevWeekData = await Activity.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfPrevWeek, $lt: startOfWeek }
+        }
+      },
+      {
+        $group: {
+          _id: "$user",
+          totalCO2: { $sum: "$carbonFootprint" }
+        }
+      }
+    ]);
+
+    const prevWeekMap = {};
+    prevWeekData.forEach((u) => {
+      prevWeekMap[u._id.toString()] = u.totalCO2;
+    });
+
+    // Add rank, eco title, improvement and eco points to each user
     const leaderboard = leaderboardData.map((user, index) => {
       const rank = index + 1;
-      const weeklyGoal = user.weeklyGoal || 100;
+      const weeklyGoal = resolveWeeklyGoal(
+        { weeklyGoal: user.userWeeklyGoal },
+        { weeklyGoal: user.goalDocGoal }
+      );
       const weeklyStatus = user.totalCO2 <= weeklyGoal ? "under" : "over";
       const ecoTitle = getEcoTitle(rank, weeklyStatus, user.activityCount);
+
+      const prevCO2 = prevWeekMap[user._id.toString()];
+      let improvement = null; // positive % = reduced vs last week
+      if (prevCO2 > 0) {
+        improvement = Math.round(((prevCO2 - user.totalCO2) / prevCO2) * 100);
+      } else if (user.totalCO2 === 0) {
+        improvement = null;
+      }
 
       return {
         _id: user._id,
         name: user.name,
         totalCO2: user.totalCO2,
         rank,
-        ecoTitle
+        ecoTitle,
+        improvement,
+        ecoPoints: user.ecoPoints || 0
       };
     });
 

@@ -484,13 +484,15 @@ function Dashboard() {
                   >
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       act.type === 'transport' ? 'bg-blue-100 text-blue-600' :
-                      act.type === 'energy' ? 'bg-amber-100 text-amber-600' :
-                      act.type === 'food' ? 'bg-green-100 text-green-600' :
-                      'bg-purple-100 text-purple-600'
+                      act.type === 'electricity' ? 'bg-amber-100 text-amber-600' :
+                      act.type === 'diet' ? 'bg-green-100 text-green-600' :
+                      act.type === 'waste' ? 'bg-purple-100 text-purple-600' :
+                      'bg-slate-100 text-slate-600'
                     }`}>
                       {act.type === 'transport' ? '🚗' :
-                       act.type === 'energy' ? '⚡' :
-                       act.type === 'food' ? '🍽️' : '📦'}
+                       act.type === 'electricity' ? '⚡' :
+                       act.type === 'diet' ? '🍽️' :
+                       act.type === 'waste' ? '♻️' : '📦'}
                     </div>
                     <div className="flex-grow">
                       <p className="font-semibold text-slate-800">

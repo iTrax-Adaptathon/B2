@@ -16,6 +16,8 @@ import Offset from "./pages/Offset";
 import Navbar from "./components/Navbar";
 import LearnMore from "./pages/LearnMore";
 import ForgotPassword from "./pages/ForgotPassword";
+import CarbonInsights from "./pages/CarbonInsights";
+import ChatWidget from "./components/ChatWidget";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -56,6 +58,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<PrivateRoute element={<Home />} />} />
         <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+        <Route path="/carbon-insights" element={<PrivateRoute element={<CarbonInsights />} />} />
         <Route path="/activity" element={<PrivateRoute element={<ActivityForm />} />} />
         <Route path="/goals" element={<PrivateRoute element={<Goals />} />} />
         <Route path="/achievements" element={<PrivateRoute element={<Achievements />} />} />
@@ -64,6 +67,7 @@ function App() {
         <Route path="/offset" element={<PrivateRoute element={<Offset />} />} />
         <Route path="/learn-more" element={<PrivateRoute element={<LearnMore />} />} />
       </Routes>
+      <ChatWidget />
       <ToastContainer position="top-center" autoClose={2000} />
     </>
   );
