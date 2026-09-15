@@ -1,4 +1,4 @@
-# 🌿 Carbon Footprint Tracker
+# 🌿 Carbon Footprint Tracker(adapted)
 ### Student Innovation: **Swadeshi for Atmanirbhar Bharat – Renewable & Sustainable Energy**
 
 A full-stack MERN application that helps users track their daily carbon emissions, set reduction goals, and build sustainable habits — now with **EcoCoach**, a personalized AI assistant that analyzes your real footprint data and gives tailored eco-advice.
